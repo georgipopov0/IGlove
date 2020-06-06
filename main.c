@@ -366,14 +366,22 @@ void record_gesture_raw(float gesture[gesture_size][3]){
 		HAL_Delay(50);
 		MPU6050_Read_Accel(tmp);
 		HAL_Delay(50);
+
+		// for each record gets average between two values
+		// this helps with the noise
 		for(j = 0; j < 3; j++){
 			gesture[i][j] = (tmp[j] + gesture[i][j]) / 2 ;
 		}
 		send_string_to_COMPORT("Recording\n\r");
+
+		// checks if the button is still pressed
 		if(read_button() == 0){
 			break ;
 		}
 	}
+
+	// sets the last read to 100
+	// used to determine the count of read values
 	gesture[i][0] = 100;
 	gesture[i][1] = 100;
 	gesture[i][2] = 100;
@@ -461,11 +469,13 @@ void prototype_recognition(float gesture[gesture_size][3]){
 	char output_buff[20];
 	int i,j;
 
-	//set to 0
+	// Set the average 0
 	for(j = 0;j < 3; j++){
 		avrg[j] = 0;
 	}
 
+	// Calculate the average for all axis
+	// and removes initial forces
 	for(j = 0; j < 3; j++){
 		for(i = 0; i < gesture_size && gesture[i][0] !=100; i++){
 			avrg[j] += gesture[i][j];
@@ -474,6 +484,8 @@ void prototype_recognition(float gesture[gesture_size][3]){
 		avrg[j] -= gesture[0][j];
 	}
 
+	// Print the averages
+	// debugging purposes
 	sprintf (output_buff, "X = %.2f ", avrg[0]);
 	send_string_to_COMPORT(output_buff);
 
@@ -483,24 +495,25 @@ void prototype_recognition(float gesture[gesture_size][3]){
 	sprintf (output_buff, "Z = %.2f\n\r", avrg[2]);
 	send_string_to_COMPORT(output_buff);
 
+	// Actions to take on recognized gesture
 	int index_of_biggest = find_biggest_ax(avrg);
 	switch (index_of_biggest) {
-		case 1:
+		case 0:
 			sprintf (output_buff, "Detected gesture: %s\n\r", "Left");
 			break;
-		case 2:
+		case 1:
 			sprintf (output_buff, "Detected gesture: %s\n\r", "Backward");
 			break;
-		case 3:
+		case 2:
 			sprintf (output_buff, "Detected gesture: %s\n\r", "Up");
 			break;
-		case 4:
+		case 3:
 			sprintf (output_buff, "Detected gesture: %s\n\r", "Right");
 			break;
-		case 5:
+		case 4:
 			sprintf (output_buff, "Detected gesture: %s\n\r", "Forward");
 			break;
-		case 6:
+		case 5:
 			sprintf (output_buff, "Detected gesture: %s\n\r", "Down");
 			break;
 		default:
@@ -513,6 +526,8 @@ void prototype_recognition(float gesture[gesture_size][3]){
 int find_biggest_ax(float vector3[3]){
 	float tmp[3];
 	int largest_index = 0;
+
+	// Makes the values positive
 	for(int j = 0; j < 3; j++){
 		if(vector3[j] < 0){
 			tmp[j] = -1 * vector3[j];
@@ -521,15 +536,15 @@ int find_biggest_ax(float vector3[3]){
 		}
 	}
 
+	// Finds the index of the largest number
 	for(int j = 0; j < 3; j++){
 		if(tmp[j] > tmp[largest_index]){
 			largest_index = j;
 		}
 	}
 
-	largest_index += 1;
-
-	if(vector3[largest_index -1] < 0){
+	// Separate positive and negative
+	if(vector3[largest_index] < 0){
 		largest_index += 3;
 	}
 
