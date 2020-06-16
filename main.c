@@ -464,6 +464,8 @@ void test_reading(){
 
 }
 
+
+//
 void prototype_recognition(float gesture[gesture_size][3]){
 	float avrg[3];
 	char output_buff[20];
